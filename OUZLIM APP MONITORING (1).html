@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Charge Entraînement - Lanceurs</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --color-primary: #2180a3;
+            --color-primary-hover: #1a6481;
+            --color-secondary: #5e5240;
+            --color-success: #32b8c6;
+            --color-error: #c01530;
+            --color-warning: #a84b2f;
+            --color-bg: #fcfcf9;
+            --color-surface: #ffffff;
+            --color-text: #134252;
+            --color-text-secondary: #626c71;
+            --color-border: #5e524012;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--color-border);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 32px;
+            color: var(--color-primary);
+        }
+
+        h2 {
+            color: var(--color-primary);
+            margin-top: 0;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .nav-tabs button {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 250ms;
+        }
+
+        .nav-tabs button.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            background: var(--color-surface);
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            margin-bottom: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        input, select, textarea {
+            padding: 10px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 14px;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(33, 128, 163, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 250ms;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: var(--color-text);
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #fee;
+            color: var(--color-error);
+        }
+
+        .btn-danger:hover {
+            background: #fdd;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: var(--color-surface);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            margin-bottom: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th {
+            background: #f8f8f6;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        tr:hover {
+            background: #fafaf8;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--color-surface);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .chart-container {
+            background: var(--color-surface);
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            margin-bottom: 24px;
+            height: 400px;
+            position: relative;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-primary {
+            background: rgba(33, 128, 163, 0.1);
+            color: var(--color-primary);
+        }
+
+        .badge-success {
+            background: rgba(50, 184, 198, 0.1);
+            color: var(--color-success);
+        }
+
+        .engin-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            padding: 16px;
+            background: #f8f8f6;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .engin-row .btn-danger {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+        }
+
+        .acwr-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .acwr-badge.optimal {
+            background: rgba(50, 184, 198, 0.2);
+            color: var(--color-success);
+        }
+
+        .acwr-badge.caution {
+            background: rgba(168, 75, 47, 0.2);
+            color: var(--color-warning);
+        }
+
+        .acwr-badge.danger {
+            background: rgba(192, 21, 47, 0.2);
+            color: var(--color-error);
+        }
+
+        .acwr-badge.low {
+            background: rgba(98, 108, 113, 0.2);
+            color: var(--color-text-secondary);
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .message.success {
+            background: rgba(50, 184, 198, 0.1);
+            color: var(--color-success);
+        }
+
+        .message.error {
+            background: rgba(192, 21, 47, 0.1);
+            color: var(--color-error);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            table {
+                font-size: 11px;
+            }
+            td, th {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ OUZLIM APP MONITORING</h1>
+            <p style="margin: 0; color: var(--color-text-secondary); font-size: 14px;">
+                Suivi complet: Date, Athlète, Type, Durée, ACWR, Engins, Charge Totale
+            </p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('athletes')">👥 Athlètes</button>
+            <button class="tab-btn" onclick="switchTab('seances')">📝 Enregistrement</button>
+            <button class="tab-btn" onclick="switchTab('monitoring')">📊 Monitoring</button>
+        </div>
+
+        <div id="message-container"></div>
+
+        <!-- TAB: ATHLETES -->
+        <div id="athletes" class="tab-content active">
+            <div class="form-section">
+                <h2>Gestion des Athlètes</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nom de l'Athlète</label>
+                        <input type="text" id="athleteName" placeholder="Ex: Mohamed Hassan">
+                    </div>
+                    <div class="form-group">
+                        <label>Spécialité</label>
+                        <select id="athleteSpecialty">
+                            <option value="">Sélectionner...</option>
+                            <option value="Marteau">Marteau</option>
+                            <option value="Poids">Poids</option>
+                            <option value="Disque">Disque</option>
+                            <option value="Javelot">Javelot</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Catégorie</label>
+                        <input type="text" id="athleteCategory" placeholder="Ex: U18, Sénior">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="addAthlete()">➕ Ajouter Athlète</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Spécialité</th>
+                            <th>Catégorie</th>
+                            <th>Séances</th>
+                            <th>ACWR</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="athletesList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: SEANCES -->
+        <div id="seances" class="tab-content">
+            <div class="form-section">
+                <h2>Enregistrer une Séance d'Entraînement</h2>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Athlète</label>
+                        <select id="sessionAthlete">
+                            <option value="">Sélectionner...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="sessionDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Type de Séance</label>
+                        <select id="sessionType">
+                            <option value="">Sélectionner...</option>
+                            <option value="Technique">Technique</option>
+                            <option value="Force">Force</option>
+                            <option value="Vitesse">Vitesse</option>
+                            <option value="Puissance">Puissance</option>
+                            <option value="Récupération">Récupération</option>
+                            <option value="Compétition">Compétition</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Durée (minutes)</label>
+                        <input type="number" id="sessionDuration" placeholder="60" min="5" max="180">
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 24px; color: var(--color-primary);">Détails par Engin (Multiple Entries)</h3>
+                <div id="enginsContainer"></div>
+                <button type="button" class="btn btn-secondary" onclick="addEnginRow()" style="margin-bottom: 16px;">➕ Ajouter un Engin</button>
+
+                <div class="form-group">
+                    <label>Observations</label>
+                    <textarea id="sessionObservations" placeholder="Remarques générales..." rows="3"></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="saveSession()">💾 Enregistrer Séance</button>
+            </div>
+        </div>
+
+        <!-- TAB: MONITORING -->
+        <div id="monitoring" class="tab-content">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Sélectionner Athlète</label>
+                    <select id="filterAthlete" onchange="updateMonitoring()">
+                        <option value="">Tous les athlètes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Période</label>
+                    <select id="filterPeriod" onchange="updateMonitoring()">
+                        <option value="7">7 derniers jours</option>
+                        <option value="14">14 derniers jours</option>
+                        <option value="30" selected>30 derniers jours</option>
+                        <option value="90">90 derniers jours</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Séances</div>
+                    <div class="stat-value" id="monTotalSessions">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Charge Moyenne</div>
+                    <div class="stat-value" id="monAvgCharge">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Tonnage Total</div>
+                    <div class="stat-value" id="monTotalTonnage">0<span style="font-size: 14px; color: var(--color-text-secondary);">kg</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">ACWR Moyen</div>
+                    <div class="stat-value" id="monAvgACWR">0.00</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="chargeChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="enginLoadChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="typeDistributionChart"></canvas>
+            </div>
+
+            <h2>Historique des Séances</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Athlète</th>
+                            <th>Type</th>
+                            <th>Durée</th>
+                            <th>Engins</th>
+                            <th>Charge Totale (kg)</th>
+                            <th>ACWR</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionsList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let athletes = JSON.parse(localStorage.getItem('athletes')) || [];
+        let sessions = JSON.parse(localStorage.getItem('sessions')) || [];
+        let chartInstances = {};
+
+        const ENGIN_TYPES = ['Marteau', 'Poids', 'Disque', 'Javelot'];
+
+        function init() {
+            updateAthletesList();
+            updateFilterSelects();
+            document.getElementById('sessionDate').valueAsDate = new Date();
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'monitoring') {
+                setTimeout(() => updateMonitoring(), 100);
+            }
+        }
+
+        function showMessage(msg, type = 'success') {
+            const container = document.getElementById('message-container');
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = msg;
+            container.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        function addAthlete() {
+            const name = document.getElementById('athleteName').value.trim();
+            const specialty = document.getElementById('athleteSpecialty').value;
+            const category = document.getElementById('athleteCategory').value.trim();
+
+            if (!name || !specialty) {
+                showMessage('Remplir tous les champs', 'error');
+                return;
+            }
+
+            athletes.push({ id: Date.now(), name, specialty, category });
+            localStorage.setItem('athletes', JSON.stringify(athletes));
+            document.getElementById('athleteName').value = '';
+            document.getElementById('athleteSpecialty').value = '';
+            document.getElementById('athleteCategory').value = '';
+
+            updateAthletesList();
+            updateFilterSelects();
+            showMessage(`"${name}" ajouté`);
+        }
+
+        function deleteAthlete(id) {
+            if (confirm('Supprimer cet athlète ?')) {
+                athletes = athletes.filter(a => a.id !== id);
+                sessions = sessions.filter(s => s.athleteId !== id);
+                localStorage.setItem('athletes', JSON.stringify(athletes));
+                localStorage.setItem('sessions', JSON.stringify(sessions));
+                updateAthletesList();
+                updateFilterSelects();
+                showMessage('Athlète supprimé');
+            }
+        }
+
+        function updateAthletesList() {
+            const tbody = document.getElementById('athletesList');
+            tbody.innerHTML = '';
+
+            athletes.forEach(athlete => {
+                const athleteSessions = sessions.filter(s => s.athleteId === athlete.id);
+                const acwr = calculateACWRForAthlete(athlete.id);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${athlete.name}</strong></td>
+                    <td><span class="badge badge-primary">${athlete.specialty}</span></td>
+                    <td>${athlete.category || '-'}</td>
+                    <td>${athleteSessions.length}</td>
+                    <td><span class="acwr-badge ${acwr.status}">${acwr.ratio.toFixed(2)}</span></td>
+                    <td><button class="btn btn-danger btn-small" onclick="deleteAthlete(${athlete.id})">Supprimer</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateFilterSelects() {
+            const select = document.getElementById('sessionAthlete');
+            const filterSelect = document.getElementById('filterAthlete');
+            
+            select.innerHTML = '<option value="">Sélectionner...</option>';
+            filterSelect.innerHTML = '<option value="">Tous les athlètes</option>';
+
+            athletes.forEach(athlete => {
+                const opt1 = document.createElement('option');
+                opt1.value = athlete.id;
+                opt1.textContent = athlete.name;
+                select.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = athlete.id;
+                opt2.textContent = athlete.name;
+                filterSelect.appendChild(opt2);
+            });
+        }
+
+        function addEnginRow() {
+            const container = document.getElementById('enginsContainer');
+            const id = Date.now();
+            
+            const row = document.createElement('div');
+            row.className = 'engin-row';
+            row.setAttribute('data-engin-id', id);
+            
+            row.innerHTML = `
+                <div class="form-group">
+                    <label>Engin</label>
+                    <select data-engin-type>
+                        <option value="">Sélectionner...</option>
+                        ${ENGIN_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Poids (kg)</label>
+                    <input type="number" data-engin-weight placeholder="7.26" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Séries</label>
+                    <input type="number" data-engin-sets placeholder="5" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Reps/Série</label>
+                    <input type="number" data-engin-reps placeholder="3" min="1">
+                </div>
+                <button type="button" class="btn btn-danger btn-small" onclick="removeEnginRow(${id})">Supprimer</button>
+            `;
+            
+            container.appendChild(row);
+        }
+
+        function removeEnginRow(id) {
+            const row = document.querySelector(`[data-engin-id="${id}"]`);
+            if (row) row.remove();
+        }
+
+        function saveSession() {
+            const athleteId = parseInt(document.getElementById('sessionAthlete').value);
+            const date = document.getElementById('sessionDate').value;
+            const type = document.getElementById('sessionType').value;
+            const duration = parseInt(document.getElementById('sessionDuration').value);
+            const observations = document.getElementById('sessionObservations').value;
+
+            if (!athleteId || !date || !type || !duration) {
+                showMessage('Remplir les champs obligatoires', 'error');
+                return;
+            }
+
+            const engins = [];
+            document.querySelectorAll('[data-engin-id]').forEach(row => {
+                const enginType = row.querySelector('[data-engin-type]').value;
+                const weight = parseFloat(row.querySelector('[data-engin-weight]').value) || 0;
+                const sets = parseInt(row.querySelector('[data-engin-sets]').value) || 0;
+                const reps = parseInt(row.querySelector('[data-engin-reps]').value) || 0;
+
+                if (enginType && weight > 0 && sets > 0 && reps > 0) {
+                    const totalReps = sets * reps;
+                    const charge = weight * totalReps;
+                    engins.push({ type: enginType, weight, sets, reps, totalReps, charge });
+                }
+            });
+
+            if (engins.length === 0) {
+                showMessage('Ajouter au moins un engin', 'error');
+                return;
+            }
+
+            const totalCharge = engins.reduce((sum, e) => sum + e.charge, 0);
+
+            const session = {
+                id: Date.now(),
+                athleteId,
+                date,
+                type,
+                duration,
+                engins,
+                observations,
+                totalCharge
+            };
+
+            sessions.push(session);
+            localStorage.setItem('sessions', JSON.stringify(sessions));
+
+            document.getElementById('sessionAthlete').value = '';
+            document.getElementById('sessionDate').valueAsDate = new Date();
+            document.getElementById('sessionType').value = '';
+            document.getElementById('sessionDuration').value = '';
+            document.getElementById('sessionObservations').value = '';
+            document.getElementById('enginsContainer').innerHTML = '';
+
+            updateAthletesList();
+            showMessage('Séance enregistrée ✅');
+        }
+
+        function calculateACWRForAthlete(athleteId) {
+            const now = new Date();
+            const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const twentyEightDaysAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+
+            const athleteSessions = sessions.filter(s => s.athleteId === athleteId);
+            
+            const acuteSessions = athleteSessions.filter(s => new Date(s.date) >= sevenDaysAgo);
+            const acuteLoad = acuteSessions.reduce((sum, s) => sum + s.totalCharge, 0);
+            const acuteAvg = acuteLoad / 7 || 0;
+
+            const chronicSessions = athleteSessions.filter(s => new Date(s.date) >= twentyEightDaysAgo);
+            const chronicLoad = chronicSessions.reduce((sum, s) => sum + s.totalCharge, 0);
+            const chronicAvg = chronicLoad / 28 || 0;
+
+            const ratio = chronicAvg > 0 ? acuteAvg / chronicAvg : 0;
+            
+            let status = 'low';
+            if (ratio >= 0.8 && ratio <= 1.3) status = 'optimal';
+            else if (ratio > 1.3 && ratio <= 1.5) status = 'caution';
+            else if (ratio > 1.5) status = 'danger';
+
+            return { ratio, status };
+        }
+
+        function updateMonitoring() {
+            const athleteId = parseInt(document.getElementById('filterAthlete').value) || null;
+            const period = parseInt(document.getElementById('filterPeriod').value);
+
+            let filtered = sessions;
+            if (athleteId) {
+                filtered = filtered.filter(s => s.athleteId === athleteId);
+            }
+
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - period);
+            filtered = filtered.filter(s => new Date(s.date) >= cutoff);
+
+            updateMonitoringStats(filtered);
+            updateCharts(filtered);
+            updateSessionsList(filtered);
+        }
+
+        function updateMonitoringStats(filtered) {
+            const totalSessions = filtered.length;
+            const avgCharge = filtered.length > 0 ? Math.round(filtered.reduce((sum, s) => sum + s.totalCharge, 0) / filtered.length) : 0;
+            const totalCharge = Math.round(filtered.reduce((sum, s) => sum + s.totalCharge, 0));
+            const avgACWR = filtered.length > 0 ? filtered.reduce((sum, s) => sum + calculateACWRForAthlete(s.athleteId).ratio, 0) / filtered.length : 0;
+
+            document.getElementById('monTotalSessions').textContent = totalSessions;
+            document.getElementById('monAvgCharge').textContent = avgCharge;
+            document.getElementById('monTotalTonnage').textContent = totalCharge;
+            document.getElementById('monAvgACWR').textContent = avgACWR.toFixed(2);
+        }
+
+        function updateCharts(filtered) {
+            const sorted = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            drawChargeTrendChart(sorted);
+            drawEnginLoadChart(sorted);
+            drawTypeDistributionChart(sorted);
+        }
+
+        function drawChargeTrendChart(filtered) {
+            const ctx = document.getElementById('chargeChart');
+            if (chartInstances.charge) chartInstances.charge.destroy();
+
+            chartInstances.charge = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: filtered.map(s => new Date(s.date).toLocaleDateString('fr-FR')),
+                    datasets: [{
+                        label: 'Charge Totale (kg)',
+                        data: filtered.map(s => s.totalCharge),
+                        borderColor: '#2180a3',
+                        backgroundColor: 'rgba(33, 128, 163, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function drawEnginLoadChart(filtered) {
+            const ctx = document.getElementById('enginLoadChart');
+            if (chartInstances.engin) chartInstances.engin.destroy();
+
+            const enginData = {};
+            ENGIN_TYPES.forEach(t => enginData[t] = { charge: 0, reps: 0 });
+
+            filtered.forEach(session => {
+                session.engins.forEach(engin => {
+                    enginData[engin.type].charge += engin.charge;
+                    enginData[engin.type].reps += engin.totalReps;
+                });
+            });
+
+            chartInstances.engin = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(enginData),
+                    datasets: [
+                        {
+                            label: 'Charge (kg)',
+                            data: Object.values(enginData).map(d => Math.round(d.charge)),
+                            backgroundColor: '#2180a3',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Reps Totaux',
+                            data: Object.values(enginData).map(d => d.reps),
+                            backgroundColor: '#a84b2f',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index' },
+                    scales: {
+                        y: { position: 'left', title: { display: true, text: 'Charge (kg)' } },
+                        y1: { position: 'right', title: { display: true, text: 'Reps' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        }
+
+        function drawTypeDistributionChart(filtered) {
+            const ctx = document.getElementById('typeDistributionChart');
+            if (chartInstances.type) chartInstances.type.destroy();
+
+            const typeCount = {};
+            filtered.forEach(s => {
+                typeCount[s.type] = (typeCount[s.type] || 0) + 1;
+            });
+
+            chartInstances.type = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(typeCount),
+                    datasets: [{
+                        data: Object.values(typeCount),
+                        backgroundColor: ['#2180a3', '#32b8c6', '#5e5240', '#a84b2f', '#c01530', '#ff9500']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        function updateSessionsList(filtered) {
+            const tbody = document.getElementById('sessionsList');
+            tbody.innerHTML = '';
+
+            filtered.forEach(session => {
+                const athlete = athletes.find(a => a.id === session.athleteId);
+                const enginsText = session.engins.map(e => `${e.type}(${e.sets}×${e.reps}×${e.weight}kg)`).join(' | ');
+                const acwr = calculateACWRForAthlete(session.athleteId);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(session.date).toLocaleDateString('fr-FR')}</td>
+                    <td><strong>${athlete?.name || 'N/A'}</strong></td>
+                    <td><span class="badge badge-success">${session.type}</span></td>
+                    <td>${session.duration}m</td>
+                    <td style="font-size: 11px;">${enginsText}</td>
+                    <td><strong>${session.totalCharge.toFixed(1)}</strong></td>
+                    <td><span class="acwr-badge ${acwr.status}">${acwr.ratio.toFixed(2)}</span></td>
+                    <td><button class="btn btn-danger btn-small" onclick="deleteSession(${session.id})">Suppr.</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function deleteSession(id) {
+            if (confirm('Supprimer cette séance ?')) {
+                sessions = sessions.filter(s => s.id !== id);
+                localStorage.setItem('sessions', JSON.stringify(sessions));
+                updateMonitoring();
+                showMessage('Séance supprimée');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
